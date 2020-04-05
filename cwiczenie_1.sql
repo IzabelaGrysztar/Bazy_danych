@@ -1,3 +1,4 @@
+CREATE database s299619;
 create SCHEMA firma;
 CREATE ROLE ksiegowosc;
 
@@ -168,10 +169,16 @@ select Count(premia.id_premii) as "Liczba premii" from premia, pensja_stanowisko
 
 select Count(premia.id_premii) as "Liczba premii" from premia, pensja_stanowisko, wynagrodzenie where pensja_stanowisko.id_pensji=wynagrodzenie.pensja_stanowisko_id_pensji AND premia.id_premii=wynagrodzenie.premia_id_premii group by pensja_stanowisko.stanowisko; --7g inaczej
 
+delete from pracownicy using pensja_stanowisko, wynagrodzenie where pracownicy.id_pracownika=wynagrodzenie.id_pracownika and pensja_stanowisko.id_pensji=wynagrodzenie.id_pensji and pensja_stanowisko.kwota < 1200; --7h
+
 ALTER TABLE firma.pracownicy ALTER COLUMN telefon TYPE text USING telefon::text;
 update pracownicy set telefon='(+48)'::text || telefon; --8a
 
+UPDATE pracownicy SET telefon=CONCAT(SUBSTRING(telefon, 1, 9), '-', SUBSTRING(telefon, 10, 3), '-', SUBSTRING(telefon, 13, 3)); --8b
+
 SELECT UPPER(nazwisko) FROM pracownicy as "nazwisko klienta" WHERE LENGTH(nazwisko) =(SELECT MAX(LENGTH(pracownicy.nazwisko)) FROM pracownicy); --8c
+
+select md5(pracownicy.imie) as "imie", md5(pracownicy.nazwisko) as "nazwisko", md5(pracownicy.adres) as "adres", md5(pracownicy.telefon) as "telefon", md5(cast(pensja_stanowisko.kwota as varchar(20))) as "pensja" from pracownicy join wynagrodzenie on wynagrodzenie.id_pracownika=pracownicy.id_pracownika join pensja_stanowisko on pensja_stanowisko.id_pensji=wynagrodzenie.id_pensji; --8d
 
 SELECT 'Pracownik '::text || pracownicy.imie || ' ' || pracownicy.nazwisko || ', w dniu '::text || wynagrodzenie."data" || ' otrzymał pensję całkowitą na kwotę '::text || (pensja_stanowisko.kwota+premia.kwota)::text || ', gdzie wynagrodzenie zasadnicze wynosiło: ' || pensja_stanowisko.kwota::text || ', premia: ' || premia.kwota::text || '.' as "Raport koncowy" FROM pracownicy, wynagrodzenie, pensja_stanowisko, premia where pracownicy.id_pracownika = wynagrodzenie.pracownicy_id_pracownika and pensja_stanowisko.id_pensji = wynagrodzenie.pensja_stanowisko_id_pensji and wynagrodzenie.premia_id_premii = premia.id_premii group by pracownicy.imie, pracownicy.nazwisko, wynagrodzenie.data, pensja_stanowisko.kwota, premia.kwota;
 --9
